@@ -1,0 +1,1 @@
+export default (el, name) => !!el.attributes[name]

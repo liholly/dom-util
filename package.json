@@ -1,0 +1,19 @@
+{
+  "name": "dom-util",
+  "description": "A tool library that allows us to write DOM programs more efficiently.",
+  "version": "0.0.1",
+  "license": "MIT",
+  "keywords": [
+    "dom programs"
+  ],
+  "devDependencies": {
+    "mime-types": "^2.1.27",
+    "rollup": "^2.41.4",
+    "rollup-watch": "^4.3.1"
+  },
+  "scripts": {
+    "build": "rollup --config rollup.config.js",
+    "dev": "rollup --config rollup.config.js -w",
+    "test": "node __test/index.js"
+  }
+}

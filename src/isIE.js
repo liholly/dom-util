@@ -1,0 +1,1 @@
+export default ("ActiveXObject" in window) || !!document.all
