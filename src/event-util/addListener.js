@@ -8,13 +8,12 @@ import mapParents from './../mapParents.js'
  * 添加事件 默认为冒泡阶段捕捉
  * @param element    事件元素
  * @param type    事件类型
- * @param sltorOrHandler    代理选择器
- * @param handler    事件函数
+ * @param sltorOrHandler    代理选择器 允许是回调函数 同一代理层级下的所有兄弟元素都会响应事件，要保证元素的统一
+ * @param handler    事件函数，回传参数有e,target
  */
 export default function (element, type, sltorOrHandler, handler) {
 	var __sltor = handler ? sltorOrHandler : null;
 	var __handler = handler || sltorOrHandler;
-	var __wrapper = __sltor && typeof __sltor === 'string' ? getParent(getEl(element, __sltor)) : null;
 
 	//事件委托
 	function eventFn(e) {
@@ -26,37 +25,23 @@ export default function (element, type, sltorOrHandler, handler) {
 		//事件代理
 		if (__sltor) {
 			if (typeof __sltor === 'string') {
-				//一次循环都没有的 直接就可以获取到目标的 说明在目标外层了 不算
-				if (!getEl(target, __sltor)) {
-					if (target !== element) {
-						var include = function (children, el) {
-							var _include = false;
+				//点击了父元素不执行
+				if (target === element) return false;
 
-							for (var i = 0; i < children.length; i++) {
-								if (children[i] === el) {
-									_include = true;
-									break;
-								}
-							}
-
-							return _include
-						};
-
-						mapParents(target, function (el) {
-							//查询已经到达绑定的最外层，则停止
-							if (__wrapper === el) return false;
-
-							//如果当前被点击的目标在代理元素内，则执行
-							var _p = getParent(el);
-							var _children = _p && getElAll(_p, __sltor);
-							if (_children && include(_children, el)) {
-								execute = true;
-								t = el;
-								return false
-							}
-						});
+				//从事件元素往上查找父元素，查找到代理元素为止（从父元素用选择器能查找到自己）
+				//存储当前的元素，因为map方法每次传回来的都是父元素
+				var __current = target;
+				mapParents(target, el => {
+					if (getEl(el, __sltor)) {
+						target = __current;
+						execute = true;
+						return false
+					} else {
+						//有可能已经到达element，却因为该子元素不是代理的元素导致到达边界了还在往上枚举，要截至
+						if (el === element) return false;
+						else __current = el
 					}
-				}
+				})
 			} else {
 				if (typeof __sltor === 'function') execute = __sltor(e);
 				else execute = e.target === __sltor
@@ -64,17 +49,11 @@ export default function (element, type, sltorOrHandler, handler) {
 		}
 
 		//根据是否有代理的情况来决定是否执行
-		if (__sltor ? execute : true) stop = __handler.call(this, e, t || target);
+		if (__sltor ? execute : true) stop = __handler.call(this, e, target);
 
 		//如果事件函数有返回false，则禁止事件默认行为
 		if (stop === false) return false;
 	}
 
-	if (element.addEventListener) {
-		element.addEventListener(type, eventFn, false);  //使用DOM2级方法添加事件
-	} else if (element.attachEvent) {                    //使用IE方法添加事件
-		element.attachEvent("on" + type, eventFn);
-	} else {
-		element["on" + type] = eventFn;          //使用DOM0级方法添加事件
-	}
+	element.addEventListener(type, eventFn, false)
 }
